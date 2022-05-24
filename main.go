@@ -8,27 +8,45 @@ import (
 )
 
 func main() {
-	Listen()
+	lstDataCh, lstErrCh, err := Listen()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+
+	_, pgrsDataCh, pgrsErrCh := NewPostgresWriter()
+	for {
+		select {
+		case data := <-lstDataCh:
+			pgrsDataCh <- data
+		case err := <-lstErrCh:
+			fmt.Printf("Error: %v\n", err)
+		case err := <-pgrsErrCh:
+			fmt.Printf("Error: %v\n", err)
+		}
+	}
 }
 
-func Listen() error {
+func Listen() (<-chan Data, <-chan error, error) {
 	sc, err := stan.Connect("test-cluster", "r9", stan.NatsURL("nats://localhost:4223"))
 	if err != nil {
-		return fmt.Errorf("error connecting: %v", err)
+		return nil, nil, fmt.Errorf("error connecting: %v", err)
 	}
+	data := make(chan Data)
+	errors := make(chan error)
 	var payment Payment
-	sub, err := sc.Subscribe("foo",
+	_, err = sc.Subscribe("foo",
 		func(m *stan.Msg) {
-			fmt.Printf("Got message. Data: %v\n", string(m.Data))
+			// fmt.Printf("Got message. Data: %v\n", string(m.Data))
 			err := json.Unmarshal(m.Data, &payment)
 			if err != nil {
-				fmt.Printf("Error unmarsh, wrong data in subscription. Error: %v\n", err)
+				formatedError := fmt.Errorf("error unmarsh, wrong data in subscription. error: %v", err)
+				errors <- formatedError
 			}
+			data <- Data{payment}
 		},
 		stan.StartWithLastReceived())
-	defer sub.Unsubscribe()
 	if err != nil {
-		return fmt.Errorf("error subscribing: %v", err)
+		return nil, nil, fmt.Errorf("error subscribing: %v", err)
 	}
-	return nil
+	return data, errors, nil
 }
