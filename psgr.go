@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+
+	_ "github.com/lib/pq"
 )
 
 type PostgresWriter struct {
@@ -23,8 +25,12 @@ func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%v\n", Db)
 	datas := make(chan Data)
 	errors := make(chan error)
+	go func() {
+		for data := range datas {
+			fmt.Printf("%v\n", data)
+		}
+	}()
 	return PostgresWriter{Datas: datas, Errors: errors, Db: Db}, datas, errors
 }
