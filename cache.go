@@ -16,16 +16,16 @@ func NewCache() Cache {
 
 func (c *Cache) Put(key string, value Data) {
 	c.locker.Lock()
+	defer c.locker.Unlock()
 	c.memoryCache[key] = &value
-	c.locker.Unlock()
 }
 
 func (c *Cache) Get(key string) (Data, error) {
 	c.locker.RLock()
+	defer c.locker.RUnlock()
 	data, ok := c.memoryCache[key]
 	if !ok {
 		return Data{}, fmt.Errorf("no such cache key %s", key)
 	}
-	c.locker.RUnlock()
 	return *data, nil
 }
