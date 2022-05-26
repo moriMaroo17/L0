@@ -34,7 +34,7 @@ func (c *Cache) CheckEmpty() bool {
 	return len(c.memoryCache) == 0
 }
 
-func (c *Cache) Restore(p *PostgresWriter, restoreCh <-chan Data) {
+func (c *Cache) Restore(p DBExecutor, restoreCh <-chan Data) {
 	go p.Backup()
 	for data := range restoreCh {
 		go c.Put(data.Payment.Transaction, data)
