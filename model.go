@@ -1,6 +1,9 @@
 package main
 
 type Data struct {
+	Order_uid          string
+	Track_number       string
+	Entry              string
 	Delivery           Delivery
 	Payment            Payment
 	Items              []Item
