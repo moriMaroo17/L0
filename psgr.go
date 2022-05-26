@@ -26,19 +26,6 @@ type PostgresWriter struct {
 
 func (w *PostgresWriter) Write() {
 	go func() {
-		// Query for write payment information
-		// insertPaymentsQuery := `INSERT INTO payments (
-		// 	transaction,
-		// 	request_id,
-		// 	currency,
-		// 	provider,
-		// 	amount,
-		// 	payment_dt,
-		// 	bank,
-		// 	delivery_cost,
-		// 	goods_total,
-		// 	custom_fee
-		// 	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 		insertDataQuery := `INSERT INTO jsonstore (id, jsondata) VALUES ($1, $2)`
 		// Listen data channel to write payment info
 		for data := range w.Datas {
