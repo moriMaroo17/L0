@@ -3,11 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 
 	stan "github.com/nats-io/stan.go"
 )
 
-func main() {
+var cacher Cache
+
+func initService() {
 	creds := Credentials{
 		user:     "service",
 		dbname:   "test_db",
@@ -25,7 +29,7 @@ func main() {
 	writer, pgrsDataCh, pgrsErrCh := NewPostgresWriter(creds)
 	writer.Write()
 	// Create cacher and restore data from postgres
-	cacher := NewCache()
+	cacher = NewCache()
 	if cacher.CheckEmpty() {
 		go cacher.Restore(&writer)
 	}
@@ -33,7 +37,7 @@ func main() {
 	for {
 		select {
 		case data := <-lstDataCh:
-			go cacher.Put(data.Payment.Transaction, data)
+			go cacher.Put(data.Order_uid, data)
 			pgrsDataCh <- data
 		case lstErr := <-lstErrCh:
 			fmt.Printf("Error while listening: %v\n", lstErr)
@@ -42,6 +46,23 @@ func main() {
 		}
 	}
 	defer writer.Db.Close()
+}
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	data, err := cacher.Get("b563feb7b2b84b6test")
+	fmt.Printf("data: %v\n", cacher.memoryCache)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(w, "%v\n", data)
+}
+
+func main() {
+	go initService()
+
+	http.HandleFunc("/", rootHandler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 // Func, which starts listening nats-streaming service and returns two channels or error
