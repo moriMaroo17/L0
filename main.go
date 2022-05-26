@@ -8,13 +8,21 @@ import (
 )
 
 func main() {
+	creds := Credentials{
+		user:     "service",
+		dbname:   "test_db",
+		password: "servicepassword",
+		host:     "localhost",
+		sslmode:  "disable",
+		port:     "5455",
+	}
 	// Start listening nats-streaming service
 	lstDataCh, lstErrCh, err := Listen()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 	// Connect to postgres
-	writer, pgrsDataCh, pgrsErrCh := NewPostgresWriter()
+	writer, pgrsDataCh, pgrsErrCh := NewPostgresWriter(creds)
 	writer.Write()
 	// Create cacher and restore data from postgres
 	cacher := NewCache()
@@ -44,22 +52,22 @@ func Listen() (<-chan Data, <-chan error, error) {
 		return nil, nil, fmt.Errorf("error connecting: %v", err)
 	}
 	// Created channels for sending data and errors
-	data := make(chan Data)
+	dataCh := make(chan Data)
 	errors := make(chan error)
-	var payment Payment
+	var data Data
 	_, err = sc.Subscribe("foo",
 		func(m *stan.Msg) {
-			err := json.Unmarshal(m.Data, &payment)
+			err := json.Unmarshal(m.Data, &data)
 			if err != nil {
 				formatedError := fmt.Errorf("error unmarsh, wrong data in subscription. error: %v", err)
 				errors <- formatedError
 			} else {
-				data <- Data{payment}
+				dataCh <- data
 			}
 		},
 		stan.StartWithLastReceived())
 	if err != nil {
 		return nil, nil, fmt.Errorf("error subscribing: %v", err)
 	}
-	return data, errors, nil
+	return dataCh, errors, nil
 }
