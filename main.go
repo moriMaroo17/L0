@@ -14,12 +14,18 @@ func main() {
 		fmt.Printf("Error: %v\n", err)
 	}
 	// Connect to postgres
-	writer, pgrsDataCh, pgrsErrCh := NewPostgresWriter()
+	writer, pgrsDataCh, pgrsErrCh, pgrsBackUpCh := NewPostgresWriter()
 	writer.Write()
+	// Create cacher and restore data from postgres
+	cacher := NewCache()
+	if cacher.CheckEmpty() {
+		go cacher.Restore(&writer, pgrsBackUpCh)
+	}
 	// Listening errors and data channels
 	for {
 		select {
 		case data := <-lstDataCh:
+			go cacher.Put(data.Payment.Transaction, data)
 			pgrsDataCh <- data
 		case lstErr := <-lstErrCh:
 			fmt.Printf("Error while listening: %v\n", lstErr)
@@ -47,8 +53,9 @@ func Listen() (<-chan Data, <-chan error, error) {
 			if err != nil {
 				formatedError := fmt.Errorf("error unmarsh, wrong data in subscription. error: %v", err)
 				errors <- formatedError
+			} else {
+				data <- Data{payment}
 			}
-			data <- Data{payment}
 		},
 		stan.StartWithLastReceived())
 	if err != nil {
