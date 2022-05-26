@@ -2,10 +2,21 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"log"
 
 	_ "github.com/lib/pq"
 )
+
+type Credentials struct {
+	user     string
+	dbname   string
+	password string
+	host     string
+	sslmode  string
+	port     string
+}
 
 type PostgresWriter struct {
 	Datas  <-chan Data
@@ -16,32 +27,26 @@ type PostgresWriter struct {
 func (w *PostgresWriter) Write() {
 	go func() {
 		// Query for write payment information
-		insertPaymentsQuery := `INSERT INTO payments (
-			transaction,
-			request_id,
-			currency,
-			provider,
-			amount,
-			payment_dt,
-			bank,
-			delivery_cost,
-			goods_total,
-			custom_fee
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+		// insertPaymentsQuery := `INSERT INTO payments (
+		// 	transaction,
+		// 	request_id,
+		// 	currency,
+		// 	provider,
+		// 	amount,
+		// 	payment_dt,
+		// 	bank,
+		// 	delivery_cost,
+		// 	goods_total,
+		// 	custom_fee
+		// 	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+		insertDataQuery := `INSERT INTO jsonstore (id, jsondata) VALUES ($1, $2)`
 		// Listen data channel to write payment info
 		for data := range w.Datas {
-			_, err := w.Db.Exec(insertPaymentsQuery,
-				data.Payment.Transaction,
-				data.Payment.Request_id,
-				data.Payment.Currency,
-				data.Payment.Provider,
-				data.Payment.Amount,
-				data.Payment.Payment_dt,
-				data.Payment.Bank,
-				data.Payment.Delivery_cost,
-				data.Payment.Goods_total,
-				data.Payment.Custom_fee,
-			)
+			marshaledData, err := json.Marshal(data)
+			if err != nil {
+				w.Errors <- err
+			}
+			_, err = w.Db.Exec(insertDataQuery, data.Order_uid, []byte(marshaledData))
 			if err != nil {
 				w.Errors <- err
 			}
@@ -50,31 +55,34 @@ func (w *PostgresWriter) Write() {
 }
 
 func (w *PostgresWriter) Backup(restoreCh chan<- Data) {
-	insertStmt := "SELECT * FROM payments"
+	insertStmt := "SELECT jsondata FROM jsonstore"
 	rows, err := w.Db.Query(insertStmt)
 	if err != nil {
 		w.Errors <- err
 	}
 	defer rows.Close()
-	pmnt := Payment{}
+	var marshData []byte
+	var unmarshData Data
 	for rows.Next() {
-		err := rows.Scan(
-			&pmnt.Transaction, &pmnt.Request_id,
-			&pmnt.Currency, &pmnt.Provider,
-			&pmnt.Amount, &pmnt.Payment_dt,
-			&pmnt.Bank, &pmnt.Delivery_cost,
-			&pmnt.Goods_total, &pmnt.Custom_fee,
-		)
+		err := rows.Scan(&marshData)
 		if err != nil {
 			w.Errors <- err
+		} else {
+			err := json.Unmarshal(marshData, &unmarshData)
+			if err != nil {
+				w.Errors <- err
+			} else {
+				restoreCh <- unmarshData
+			}
 		}
-		restoreCh <- Data{Payment: pmnt}
 	}
 	defer close(restoreCh)
 }
 
-func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error) {
-	connStr := "user=service dbname=test_db password=servicepassword host=localhost sslmode=disable port=5455"
+func NewPostgresWriter(credentials Credentials) (PostgresWriter, chan<- Data, <-chan error) {
+	connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s sslmode=%s port=%s",
+		credentials.user, credentials.dbname, credentials.password, credentials.host, credentials.sslmode, credentials.port,
+	)
 
 	Db, err := sql.Open("postgres", connStr)
 	if err != nil {
