@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
 	_ "github.com/lib/pq"
@@ -70,15 +69,15 @@ func (w *PostgresWriter) Backup() {
 		if err != nil {
 			w.Errors <- err
 		}
+		w.BackupCh <- Data{Payment: pmnt}
 	}
-	fmt.Printf("%v\n", pmnt)
 }
 
 func (w *PostgresWriter) CheckTablesExists() {
 
 }
 
-func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error) {
+func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error, <-chan Data) {
 	connStr := "user=service dbname=test_db password=servicepassword host=localhost sslmode=disable port=5455"
 
 	Db, err := sql.Open("postgres", connStr)
@@ -88,5 +87,5 @@ func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error) {
 	datas := make(chan Data)
 	backUpCh := make(chan Data)
 	errors := make(chan error)
-	return PostgresWriter{Datas: datas, BackupCh: backUpCh, Errors: errors, Db: Db}, datas, errors
+	return PostgresWriter{Datas: datas, BackupCh: backUpCh, Errors: errors, Db: Db}, datas, errors, backUpCh
 }
