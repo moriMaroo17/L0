@@ -73,10 +73,6 @@ func (w *PostgresWriter) Backup() {
 	}
 }
 
-func (w *PostgresWriter) CheckTablesExists() {
-
-}
-
 func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error, <-chan Data) {
 	connStr := "user=service dbname=test_db password=servicepassword host=localhost sslmode=disable port=5455"
 
