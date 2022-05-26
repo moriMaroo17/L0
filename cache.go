@@ -34,8 +34,9 @@ func (c *Cache) CheckEmpty() bool {
 	return len(c.memoryCache) == 0
 }
 
-func (c *Cache) Restore(p DBExecutor, restoreCh <-chan Data) {
-	go p.Backup()
+func (c *Cache) Restore(p DBExecutor) {
+	restoreCh := make(chan Data)
+	go p.Backup(restoreCh)
 	for data := range restoreCh {
 		go c.Put(data.Payment.Transaction, data)
 	}

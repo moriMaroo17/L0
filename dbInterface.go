@@ -2,5 +2,5 @@ package main
 
 type DBExecutor interface {
 	Write()
-	Backup()
+	Backup(chan<- Data)
 }

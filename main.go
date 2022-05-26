@@ -14,12 +14,12 @@ func main() {
 		fmt.Printf("Error: %v\n", err)
 	}
 	// Connect to postgres
-	writer, pgrsDataCh, pgrsErrCh, pgrsBackUpCh := NewPostgresWriter()
+	writer, pgrsDataCh, pgrsErrCh := NewPostgresWriter()
 	writer.Write()
 	// Create cacher and restore data from postgres
 	cacher := NewCache()
 	if cacher.CheckEmpty() {
-		go cacher.Restore(&writer, pgrsBackUpCh)
+		go cacher.Restore(&writer)
 	}
 	// Listening errors and data channels
 	for {

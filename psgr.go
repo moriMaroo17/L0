@@ -8,10 +8,9 @@ import (
 )
 
 type PostgresWriter struct {
-	Datas    <-chan Data
-	BackupCh chan<- Data
-	Errors   chan<- error
-	Db       *sql.DB
+	Datas  <-chan Data
+	Errors chan<- error
+	Db     *sql.DB
 }
 
 func (w *PostgresWriter) Write() {
@@ -50,7 +49,7 @@ func (w *PostgresWriter) Write() {
 	}()
 }
 
-func (w *PostgresWriter) Backup() {
+func (w *PostgresWriter) Backup(restoreCh chan<- Data) {
 	insertStmt := "SELECT * FROM payments"
 	rows, err := w.Db.Query(insertStmt)
 	if err != nil {
@@ -69,11 +68,12 @@ func (w *PostgresWriter) Backup() {
 		if err != nil {
 			w.Errors <- err
 		}
-		w.BackupCh <- Data{Payment: pmnt}
+		restoreCh <- Data{Payment: pmnt}
 	}
+	defer close(restoreCh)
 }
 
-func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error, <-chan Data) {
+func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error) {
 	connStr := "user=service dbname=test_db password=servicepassword host=localhost sslmode=disable port=5455"
 
 	Db, err := sql.Open("postgres", connStr)
@@ -81,7 +81,6 @@ func NewPostgresWriter() (PostgresWriter, chan<- Data, <-chan error, <-chan Data
 		log.Fatal(err)
 	}
 	datas := make(chan Data)
-	backUpCh := make(chan Data)
 	errors := make(chan error)
-	return PostgresWriter{Datas: datas, BackupCh: backUpCh, Errors: errors, Db: Db}, datas, errors, backUpCh
+	return PostgresWriter{Datas: datas, Errors: errors, Db: Db}, datas, errors
 }
