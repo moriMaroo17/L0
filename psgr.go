@@ -41,9 +41,34 @@ func (w *PostgresWriter) Write() {
 	}()
 }
 
+func (w *PostgresWriter) Get(id string, output chan<- Data) {
+	getDataQuery := `SELECT jsondata FROM jsonstore WHERE id = $1`
+	rows, err := w.Db.Query(getDataQuery, id)
+	if err != nil {
+		w.Errors <- err
+	}
+	defer rows.Close()
+	var marshData []byte
+	var unmarshData Data
+	for rows.Next() {
+		err := rows.Scan(&marshData)
+		if err != nil {
+			w.Errors <- err
+		} else {
+			err := json.Unmarshal(marshData, &unmarshData)
+			if err != nil {
+				w.Errors <- err
+			} else {
+				output <- unmarshData
+			}
+		}
+	}
+	defer close(output)
+}
+
 func (w *PostgresWriter) Backup(restoreCh chan<- Data) {
-	insertStmt := "SELECT jsondata FROM jsonstore"
-	rows, err := w.Db.Query(insertStmt)
+	backupDataQuery := "SELECT jsondata FROM jsonstore"
+	rows, err := w.Db.Query(backupDataQuery)
 	if err != nil {
 		w.Errors <- err
 	}
