@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+	"path"
 
 	validator "github.com/go-playground/validator/v10"
 	stan "github.com/nats-io/stan.go"
@@ -52,18 +54,43 @@ func initService() {
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	data, err := cacher.Get("b563feb7b2b84b6test")
-	fmt.Printf("data: %v\n", cacher.memoryCache)
+	filepath := path.Join("views", "index.html")
+	tmpl, err := template.ParseFiles(filepath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(w, "%v\n", data)
+	tmpl.Execute(w, nil)
+}
+
+func getDataHandler(w http.ResponseWriter, r *http.Request) {
+	id, ok := r.URL.Query()["dataId"]
+	if !ok {
+		return
+	}
+
+	result, err := cacher.Get(string(id[0]))
+	if err != nil {
+		http.Error(w,
+			err.Error(),
+			http.StatusNotFound)
+		return
+	}
+	filePath := path.Join("views", "data.html")
+	tmpl, err := template.ParseFiles(filePath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, result)
 }
 
 func main() {
 	go initService()
+	// Add css to html views
+	http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
 
+	http.HandleFunc("/getData", getDataHandler)
 	http.HandleFunc("/", rootHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
