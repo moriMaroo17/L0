@@ -1,54 +1,55 @@
 package main
 
 type Data struct {
-	Order_uid          string
-	Track_number       string
-	Entry              string
-	Delivery           Delivery
-	Payment            Payment
-	Items              []Item
-	Locale             string
-	Internal_signature string
-	Customer_id        string
-	Delivery_service   string
-	ShardKey           string
-	Sm_id              int
-	Date_created       string
-	Oof_shard          string
+	OrderUid          string   `json:"order_uid"`
+	TrackNumber       string   `json:"track_number"`
+	Entry             string   `json:"entry"`
+	Delivery          Delivery `json:"delivery"`
+	Payment           Payment  `json: "payment"`
+	Items             []Item   `json:"items"`
+	Locale            string   `json:"locale"`
+	InternalSignature string   `json:"internal_signature"`
+	CustomerId        string   `json:"customer_id"`
+	DeliveryService   string   `json:"delivery_service"`
+	ShardKey          string   `json:"shardkey"`
+	Sm_id             int      `json:"sm_id"`
+	DateCreated       string   `json:"date_created"`
+	OofShard          string   `json:"oof_shard"`
 }
 
 type Payment struct {
-	Transaction   string
-	Request_id    string
-	Currency      string
-	Provider      string
-	Amount        float64
-	Payment_dt    int
-	Bank          string
-	Delivery_cost float64
-	Goods_total   uint
-	Custom_fee    float64
+	Transaction  string  `json:"transaction"`
+	RequestId    string  `json:"request_id"`
+	Currency     string  `json:"currency"`
+	Provider     string  `json:"provider"`
+	Amount       float64 `json:"amount"`
+	PaymentDt    int     `json:"payment_dt"`
+	Bank         string  `json:"bank"`
+	DeliveryCost float64 `json:"delivery_cost"`
+	GoodsTotal   uint    `json:"goods_total"`
+	CustomFee    float64 `json:"custom_fee"`
 }
 
 type Delivery struct {
-	Name    string
-	Phone   string
-	Zip     string
-	City    string
-	Address string
-	Region  string
-	Email   string
+	Name    string `json:"name"`
+	Phone   string `json:"phone"`
+	Zip     string `json:"zip"`
+	City    string `json:"city"`
+	Address string `json:"address"`
+	Region  string `json:"region"`
+	Email   string `json:"email"`
 }
 
 type Item struct {
-	Chrt_id      int
-	Track_number string
-	Price        float64
-	Rid          string
-	Name         string
-	Sale         float64
-	Size         string
-	Total_price  float64
-	Nm_id        int
-	Brand        string
+	ChrtId      int     `json:"chrt_id"`
+	TrackNumber string  `json:"track_number"`
+	Price       float64 `json:"price"`
+	Rid         string  `json:"rid"`
+	Name        string  `json:"name"`
+	Sale        float64 `json:"sale"`
+	Size        string  `json:"size"`
+	TotalPrice  float64 `json:total_price`
+	Nm_id       int     `json:"nm_id"`
+	Brand       string  `json:"brand"`
+	Status      string  `json:"status"`
 }
