@@ -6,13 +6,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/go-playground/validator/v10"
-	"github.com/nats-io/stan.go"
+	validator "github.com/go-playground/validator/v10"
+	stan "github.com/nats-io/stan.go"
 )
 
 var cacher Cache
 
-var Validator = validator.New()
+var jsonValidator = validator.New()
 
 func initService() {
 	creds := Credentials{
@@ -24,7 +24,7 @@ func initService() {
 		port:     "5455",
 	}
 	// Start listening nats-streaming service
-	lstDataCh, lstErrCh, err := Listen()
+	lstDataCh, lstErrCh, err := listen()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
@@ -36,6 +36,7 @@ func initService() {
 	if cacher.CheckEmpty() {
 		go cacher.Restore(&writer)
 	}
+	defer writer.Db.Close()
 	// Listening errors and data channels
 	for {
 		select {
@@ -48,7 +49,6 @@ func initService() {
 			fmt.Printf("Error while working with pgrs: %v\n", pgrsErr)
 		}
 	}
-	defer writer.Db.Close()
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +69,7 @@ func main() {
 }
 
 // Func, which starts listening nats-streaming service and returns two channels or error
-func Listen() (<-chan Data, <-chan error, error) {
+func listen() (<-chan Data, <-chan error, error) {
 	// Connect to nats-streaming service
 	sc, err := stan.Connect("test-cluster", "r9", stan.NatsURL("nats://localhost:4223"))
 	if err != nil {
@@ -86,12 +86,9 @@ func Listen() (<-chan Data, <-chan error, error) {
 				formatedError := fmt.Errorf("error unmarsh, wrong data in subscription. error: %v", err)
 				errors <- formatedError
 			} else {
-				err := Validator.Struct(data)
-				fmt.Printf("%v\n", data)
+				err := jsonValidator.Struct(data)
 				if err != nil {
-					for _, err := range err.(validator.ValidationErrors) {
-						errors <- fmt.Errorf("error while validating data: %v", err)
-					}
+					errors <- fmt.Errorf("validation failed")
 				} else {
 					dataCh <- data
 				}
