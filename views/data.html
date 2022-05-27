@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Data with id: {{.OrderUid}}</title>
+        <link rel="stylesheet" href="./public/index.css">
+    </head>
+    <body>
+        <div class="mainBlock">
+          <p>OrderUid: {{.OrderUid}}</p>
+          <p>TrackNumber: {{.TrackNumber}}</p>
+          <p>Entry: {{.Entry}}</p>
+
+          <div class="block">
+            <p class="blockTitle">Delivery:</p>
+            <p>Name: {{.Delivery.Name}}</p>
+            <p>Phone:{{.Delivery.Phone}}</p>
+            <p>Zip: {{.Delivery.Zip}}</p>
+            <p>City: {{.Delivery.City}}</p>
+            <p>Address: {{.Delivery.Address}}</p>
+            <p>Region: {{.Delivery.Region}}</p>
+            <p>Email: {{.Delivery.Email}}</p>
+          </div>
+
+          <div class="block">
+            <p class="blockTitle">Payment: </p>
+            <p>Transaction: {{.Payment.Transaction}}</p>
+            <p>RequestId: {{.Payment.RequestId}}</p>
+            <p>Currency: {{.Payment.Currency}}</p>
+            <p>Provider: {{.Payment.Provider}}</p>
+            <p>Amount: {{.Payment.Amount}}</p>
+            <p>PaymentDt: {{.Payment.PaymentDt}}</p>
+            <p>Bank: {{.Payment.Bank}}</p>
+            <p>DeliveryCost: {{.Payment.DeliveryCost}}</p>
+            <p>GoodsTotal: {{.Payment.GoodsTotal}}</p>
+            <p>CustomFee: {{.Payment.CustomFee}}</p>
+          </div>
+          <div class="block">
+            <p class="blockTitle">Items: </p>
+            {{range .Items}}
+              <div class="blockItem">
+                <p>ChrtId: {{.ChrtId}}</p>
+                <p>TrackNumber: {{.TrackNumber}}</p>
+                <p>Price: {{.Price}}</p>
+                <p>Rid: {{.Rid}}</p>
+                <p>Name: {{.Name}}</p>
+                <p>Sale: {{.Sale}}</p>
+                <p>Size: {{.Size}}</p>
+                <p>TotalPrice: {{.TotalPrice}}</p>
+                <p>Nm_id: {{.Nm_id}}</p>
+                <p>Brand: {{.Brand}}</p>
+                <p>Status: {{.Status}}</p>
+              </div>
+            {{end}}
+          </div>
+
+          <p>Locale: {{.Locale}}</p>
+          <p>InternalSignature: {{.InternalSignature}}</p>
+          <p>CustomerId: {{.CustomerId}}</p>
+          <p>DeliveryService: {{.DeliveryService}}</p>
+          <p>ShardKey: {{.ShardKey}}</p>
+          <p>Sm_id: {{.Sm_id}}</p>
+          <p>DateCreated: {{.DateCreated}}</p>
+          <p>OofShard: {{.OofShard}}</p>
+        </div>
+
+    </body>
+</html>
