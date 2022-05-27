@@ -6,10 +6,13 @@ import (
 	"log"
 	"net/http"
 
-	stan "github.com/nats-io/stan.go"
+	"github.com/go-playground/validator/v10"
+	"github.com/nats-io/stan.go"
 )
 
 var cacher Cache
+
+var Validator = validator.New()
 
 func initService() {
 	creds := Credentials{
@@ -37,7 +40,7 @@ func initService() {
 	for {
 		select {
 		case data := <-lstDataCh:
-			go cacher.Put(data.Order_uid, data)
+			go cacher.Put(data.OrderUid, data)
 			pgrsDataCh <- data
 		case lstErr := <-lstErrCh:
 			fmt.Printf("Error while listening: %v\n", lstErr)
@@ -83,7 +86,15 @@ func Listen() (<-chan Data, <-chan error, error) {
 				formatedError := fmt.Errorf("error unmarsh, wrong data in subscription. error: %v", err)
 				errors <- formatedError
 			} else {
-				dataCh <- data
+				err := Validator.Struct(data)
+				fmt.Printf("%v\n", data)
+				if err != nil {
+					for _, err := range err.(validator.ValidationErrors) {
+						errors <- fmt.Errorf("error while validating data: %v", err)
+					}
+				} else {
+					dataCh <- data
+				}
 			}
 		},
 		stan.StartWithLastReceived())
