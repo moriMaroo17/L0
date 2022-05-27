@@ -30,7 +30,6 @@ func (w *PostgresWriter) Write() {
 		// Listen data channel to write payment info
 		for data := range w.Datas {
 			marshaledData, err := json.Marshal(data)
-			fmt.Printf("%v", data)
 			if err != nil {
 				w.Errors <- err
 			}
